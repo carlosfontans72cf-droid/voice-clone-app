@@ -49,6 +49,7 @@ label {
 .hint { font-weight: 400; font-size: 0.82rem; color: var(--muted); }
 
 input[type="file"],
+.textinput,
 textarea,
 select {
   background: var(--bg);
@@ -101,3 +102,9 @@ audio { width: 100%; }
 }
 
 .result a { color: var(--accent); }
+
+.files {
+  margin: -6px 0 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}

@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from "react";
 const LANGUAGES = ["Español", "English", "Português", "Français", "Italiano", "Deutsch"];
 const DEFAULT_BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 const MAX_CHARS = 5000;
+const MAX_REFS = 8;
 
 export default function Home() {
   const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND);
-  const [refFile, setRefFile] = useState(null);
-  const [refPreview, setRefPreview] = useState("");
+  const [refFiles, setRefFiles] = useState([]);
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("Español");
   const [consent, setConsent] = useState(false);
@@ -32,19 +32,18 @@ export default function Home() {
     } catch {}
   }, [backendUrl]);
 
-  // Vista previa del audio de referencia, liberando la URL anterior.
-  useEffect(() => {
-    if (!refFile) {
-      setRefPreview("");
-      return;
-    }
-    const url = URL.createObjectURL(refFile);
-    setRefPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [refFile]);
-
   const cleanUrl = backendUrl.trim().replace(/\/+$/, "");
-  const canSubmit = cleanUrl && refFile && text.trim() && consent && !loading;
+  const canSubmit = cleanUrl && refFiles.length > 0 && text.trim() && consent && !loading;
+
+  function handleFiles(e) {
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length > MAX_REFS) {
+      setError(`Elegiste ${picked.length} audios. Uso solo los primeros ${MAX_REFS}.`);
+    } else {
+      setError("");
+    }
+    setRefFiles(picked.slice(0, MAX_REFS));
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -65,7 +64,7 @@ export default function Home() {
         clientRef.current = { url: cleanUrl, client: await Client.connect(cleanUrl) };
       }
       const result = await clientRef.current.client.predict("/clone", {
-        ref_audio: refFile,
+        ref_audio: refFiles,
         text,
         language,
       });
@@ -89,7 +88,7 @@ export default function Home() {
     <main>
       <h1>Clonador de voz</h1>
       <p className="sub">
-        Subí un audio de referencia, escribí el texto y generá el audio con esa voz.
+        Subí audios de referencia, escribí el texto y generá el audio con esa voz.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -100,6 +99,7 @@ export default function Home() {
           </span>
           <input
             type="url"
+            className="textinput"
             value={backendUrl}
             onChange={(e) => setBackendUrl(e.target.value)}
             placeholder="https://xxxxxxxx.gradio.live"
@@ -107,16 +107,28 @@ export default function Home() {
         </label>
 
         <label>
-          Audio de referencia
-          <span className="hint">10 a 30 segundos, una sola voz, sin ruido de fondo</span>
+          Audios de referencia
+          <span className="hint">
+            Podés elegir varios (hasta {MAX_REFS}) de la misma persona. Sirven los audios de
+            WhatsApp. Mejor 3 a 5 limpios, sin ruido ni música, que sumen 20 a 30 segundos.
+          </span>
           <input
             type="file"
-            accept="audio/*"
-            onChange={(e) => setRefFile(e.target.files?.[0] ?? null)}
+            multiple
+            accept="audio/*,.opus,.ogg,.m4a,.aac,.mp3,.wav"
+            onChange={handleFiles}
           />
         </label>
 
-        {refPreview && <audio controls src={refPreview} />}
+        {refFiles.length > 0 && (
+          <ul className="files">
+            {refFiles.map((f) => (
+              <li key={`${f.name}-${f.size}`}>
+                {f.name} <span className="hint">({Math.round(f.size / 1024)} KB)</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         <label>
           Texto
