@@ -29,7 +29,7 @@ Abrí http://localhost:3000
 ## Deploy en Vercel
 
 Importá este repo en https://vercel.com/new y hacé Deploy. No hace falta ninguna variable de entorno
-(opcional: `NEXT_PUBLIC_SPACE_ID` con una URL de servidor por defecto).
+(opcional: `NEXT_PUBLIC_BACKEND_URL` con una URL de backend por defecto).
 
 ## Notas
 
